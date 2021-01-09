@@ -1,4 +1,5 @@
-# load-generator
+# Load Generator
+This project follows [Uber's go guide](https://github.com/uber-go/guide)
 
 ### Key Metrics
 - PPS(Payloads Per Second)
