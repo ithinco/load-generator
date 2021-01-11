@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"go.uber.org/zap"
+	"load-generator/helpers"
 	"load-generator/lib"
 	"strings"
 	"time"
@@ -16,6 +18,7 @@ type NewLoadGeneratorParams struct {
 }
 
 func (receiver *NewLoadGeneratorParams) Check() error {
+	helpers.Logger.Info("Start Checking NewLoadGeneratorParams...")
 	var errMsgs []string
 	if receiver.Caller == nil {
 		errMsgs = append(errMsgs, "Invalid caller!")
@@ -38,8 +41,10 @@ func (receiver *NewLoadGeneratorParams) Check() error {
 	}
 
 	if len(errMsgs) > 0 {
-		return errors.New(strings.Join(errMsgs, " "))
+		errMsg := strings.Join(errMsgs, " ")
+		helpers.Logger.Info("Didn't Pass Params Check", zap.String("err", errMsg))
+		return errors.New(errMsg)
 	}
-
+	helpers.Logger.Info("Passed Params Check", zap.Uint64("pps", receiver.PPS), zap.Duration("timeoutNS", receiver.TimeoutNS), zap.Duration("processingDurationNS", receiver.ProcessingDurationNS))
 	return nil
 }
