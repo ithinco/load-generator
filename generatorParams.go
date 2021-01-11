@@ -8,14 +8,14 @@ import (
 )
 
 type NewLoadGeneratorParams struct {
-	Caller lib.Caller
-	PPS uint64
+	Caller               lib.Caller
+	PPS                  uint64
 	ProcessingDurationNS time.Duration
-	TimeoutNS time.Duration
-	ResultChan chan *lib.CallResult
+	TimeoutNS            time.Duration
+	ResultChan           chan *lib.CallResult
 }
 
-func (receiver *NewLoadGeneratorParams) Check() error  {
+func (receiver *NewLoadGeneratorParams) Check() error {
 	var errMsgs []string
 	if receiver.Caller == nil {
 		errMsgs = append(errMsgs, "Invalid caller!")

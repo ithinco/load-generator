@@ -11,29 +11,29 @@ import (
 )
 
 const (
-	STATUS_INIT uint32 = 0
+	STATUS_INIT     uint32 = 0
 	STATUS_STARTING uint32 = 1
-	STATUS_STARTED uint32 = 2
+	STATUS_STARTED  uint32 = 2
 	STATUS_STOPPING uint32 = 3
-	STATUS_STOPPED uint32 = 4
+	STATUS_STOPPED  uint32 = 4
 
-	CALL_STATUS_INIT = 0
-	CALL_STATUS_DONE = 1
+	CALL_STATUS_INIT    = 0
+	CALL_STATUS_DONE    = 1
 	CALL_STATUS_TIMEOUT = 2
 )
 
 type loadGenerator struct {
 	status uint32
 
-	ctx context.Context
+	ctx           context.Context
 	ctxCancelFunc context.CancelFunc
 
-	pps uint64 // payloads per second
+	pps                  uint64 // payloads per second
 	processingDurationNS time.Duration
-	timeoutDurationNS time.Duration
+	timeoutDurationNS    time.Duration
 
 	concurrency uint64
-	callCount uint64
+	callCount   uint64
 
 	resultChan chan *lib.CallResult
 
@@ -43,12 +43,12 @@ type loadGenerator struct {
 }
 
 func (receiver *loadGenerator) init() error {
-	interval := 1e9/receiver.pps
+	interval := 1e9 / receiver.pps
 	if interval == 0 {
 		interval = 10
 	}
-	
-	total := uint64(int64(receiver.timeoutDurationNS)/int64(interval)+1)
+
+	total := uint64(int64(receiver.timeoutDurationNS)/int64(interval) + 1)
 	if total > math.MaxUint64 {
 		total = math.MaxUint64
 	}
@@ -72,18 +72,18 @@ func (receiver *loadGenerator) callOne(rawReq *lib.RawRequest) *lib.RawResponse 
 	startTime := time.Now().UnixNano()
 	resp, err := receiver.callerImpl.Call(rawReq.Req, receiver.timeoutDurationNS)
 	endTime := time.Now().UnixNano()
-	duration := time.Duration(startTime-endTime)
+	duration := time.Duration(startTime - endTime)
 	if err != nil {
 		errMsg := fmt.Sprintf("Sync CallOne Error: %s.", err)
 		rawResp = &lib.RawResponse{
-			ID: rawReq.ID,
-			Err: errors.New(errMsg),
+			ID:     rawReq.ID,
+			Err:    errors.New(errMsg),
 			Elapse: duration,
 		}
 	} else {
 		rawResp = &lib.RawResponse{
-			ID: rawReq.ID,
-			Resp: resp,
+			ID:     rawReq.ID,
+			Resp:   resp,
 			Elapse: duration,
 		}
 	}
@@ -91,7 +91,7 @@ func (receiver *loadGenerator) callOne(rawReq *lib.RawRequest) *lib.RawResponse 
 	return rawResp
 }
 
-func (receiver *loadGenerator) asyncCall()  {
+func (receiver *loadGenerator) asyncCall() {
 	receiver.ticketsImpl.Take()
 	go func() {
 		defer func() {
@@ -104,10 +104,10 @@ func (receiver *loadGenerator) asyncCall()  {
 				return
 			}
 			result := &lib.CallResult{
-				ID: rawReq.ID,
-				Req: rawReq,
-				Code: lib.RET_CODE_WARNING_TIMEOUT,
-				Msg: fmt.Sprintf("Timeout! Expected < %v", receiver.timeoutDurationNS),
+				ID:     rawReq.ID,
+				Req:    rawReq,
+				Code:   lib.RET_CODE_WARNING_TIMEOUT,
+				Msg:    fmt.Sprintf("Timeout! Expected < %v", receiver.timeoutDurationNS),
 				Elapse: receiver.timeoutDurationNS,
 			}
 			receiver.sendResult(result)
@@ -135,7 +135,7 @@ func (receiver *loadGenerator) asyncCall()  {
 }
 
 func (receiver *loadGenerator) sendResult(result *lib.CallResult) bool {
-	if receiver.Status() != STATUS_STARTED  {
+	if receiver.Status() != STATUS_STARTED {
 		receiver.printIgnoredResult(result, "load generator stopped")
 		return false
 	}
@@ -157,13 +157,13 @@ func (receiver *loadGenerator) printIgnoredResult(result *lib.CallResult, cause 
 	fmt.Printf("Ignored result: %s. (cause: %s)\n", resultMsg, cause)
 }
 
-func (receiver *loadGenerator) prepareToStop(err error)  {
+func (receiver *loadGenerator) prepareToStop(err error) {
 	atomic.CompareAndSwapUint32(&receiver.status, STATUS_STARTED, STATUS_STOPPING)
 	close(receiver.resultChan)
 	atomic.StoreUint32(&receiver.status, STATUS_STOPPED)
 }
 
-func (receiver *loadGenerator) genLoad(throttle <-chan time.Time)  {
+func (receiver *loadGenerator) genLoad(throttle <-chan time.Time) {
 	for {
 		select {
 		case <-receiver.ctx.Done():
@@ -172,7 +172,7 @@ func (receiver *loadGenerator) genLoad(throttle <-chan time.Time)  {
 		default:
 		}
 		receiver.asyncCall()
-		if receiver.pps > 0{
+		if receiver.pps > 0 {
 			select {
 			case <-throttle:
 			case <-receiver.ctx.Done():
@@ -183,7 +183,7 @@ func (receiver *loadGenerator) genLoad(throttle <-chan time.Time)  {
 	}
 }
 
-func (receiver *loadGenerator) Start() bool  {
+func (receiver *loadGenerator) Start() bool {
 	if !atomic.CompareAndSwapUint32(&receiver.status, STATUS_INIT, STATUS_STARTING) {
 		if !atomic.CompareAndSwapUint32(&receiver.status, STATUS_STOPPED, STATUS_STARTING) {
 			return false
@@ -192,7 +192,7 @@ func (receiver *loadGenerator) Start() bool  {
 
 	var throttle <-chan time.Time
 	if receiver.pps > 0 {
-		interval := time.Duration(1e9/receiver.pps)
+		interval := time.Duration(1e9 / receiver.pps)
 		throttle = time.Tick(interval)
 	}
 
@@ -208,7 +208,7 @@ func (receiver *loadGenerator) Start() bool  {
 	return true
 }
 
-func (receiver *loadGenerator) Stop() bool  {
+func (receiver *loadGenerator) Stop() bool {
 	if !atomic.CompareAndSwapUint32(&receiver.status, STATUS_STARTED, STATUS_STOPPING) {
 		return false
 	}
@@ -226,7 +226,7 @@ func (receiver *loadGenerator) Status() uint32 {
 	return atomic.LoadUint32(&receiver.status)
 }
 
-func (receiver *loadGenerator) CallCount() uint64  {
+func (receiver *loadGenerator) CallCount() uint64 {
 	return atomic.LoadUint64(&receiver.callCount)
 }
 
@@ -240,18 +240,18 @@ type Generator interface {
 // NewLoadGenerator ...
 func NewLoadGenerator(
 	params NewLoadGeneratorParams,
-	) (Generator, error) {
+) (Generator, error) {
 	if err := params.Check(); err != nil {
 		return nil, err
 	}
-	
+
 	gen := &loadGenerator{
-		callerImpl: params.Caller,
-		pps: params.PPS,
+		callerImpl:           params.Caller,
+		pps:                  params.PPS,
 		processingDurationNS: params.ProcessingDurationNS,
-		timeoutDurationNS: params.TimeoutNS,
-		resultChan: params.ResultChan,
-		status: STATUS_INIT,
+		timeoutDurationNS:    params.TimeoutNS,
+		resultChan:           params.ResultChan,
+		status:               STATUS_INIT,
 	}
 
 	if err := gen.init(); err != nil {
@@ -261,6 +261,6 @@ func NewLoadGenerator(
 	return gen, nil
 }
 
-func main()  {
+func main() {
 	fmt.Println("Hello")
 }

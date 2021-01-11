@@ -14,12 +14,12 @@ type GoroutinePoolTickets interface {
 }
 
 type goroutinePoolTickets struct {
-	total uint64
+	total      uint64
 	ticketChan chan struct{}
-	active bool
+	active     bool
 }
 
-func (receiver *goroutinePoolTickets) init(total uint64) bool  {
+func (receiver *goroutinePoolTickets) init(total uint64) bool {
 	if receiver.active {
 		return false
 	}
@@ -39,30 +39,30 @@ func (receiver *goroutinePoolTickets) init(total uint64) bool  {
 	return true
 }
 
-func (receiver *goroutinePoolTickets) Take()  {
+func (receiver *goroutinePoolTickets) Take() {
 	<-receiver.ticketChan
 }
 
-func (receiver *goroutinePoolTickets) PutBack()  {
-	receiver.ticketChan<- struct{}{}
+func (receiver *goroutinePoolTickets) PutBack() {
+	receiver.ticketChan <- struct{}{}
 }
 
-func (receiver *goroutinePoolTickets) Active() bool  {
+func (receiver *goroutinePoolTickets) Active() bool {
 	return receiver.active
 }
 
-func (receiver *goroutinePoolTickets) RemainingTickets() uint64  {
+func (receiver *goroutinePoolTickets) RemainingTickets() uint64 {
 	return uint64(len(receiver.ticketChan))
 }
 
-func (receiver *goroutinePoolTickets) Total() uint64  {
+func (receiver *goroutinePoolTickets) Total() uint64 {
 	return receiver.total
 }
 
 func NewGoroutinePoolTickets(total uint64) (GoroutinePoolTickets, error) {
 	gpt := goroutinePoolTickets{}
 	if !gpt.init(total) {
-		errMsg := fmt.Sprintf("Can't initialize goroutinePoolTickets with total=%d",total)
+		errMsg := fmt.Sprintf("Can't initialize goroutinePoolTickets with total=%d", total)
 		return nil, errors.New(errMsg)
 	}
 	return &gpt, nil
