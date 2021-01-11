@@ -1,6 +1,6 @@
 package lib
 
 type RawRequest struct {
-	ID uint64
+	ID int64
 	Req []byte
 }

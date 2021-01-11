@@ -43,7 +43,12 @@ type loadGenerator struct {
 }
 
 func (receiver *loadGenerator) init() error {
-	total := uint64(int64(receiver.timeoutDurationNS)/int64(1e9/receiver.processingDurationNS)+1)
+	interval := 1e9/receiver.pps
+	if interval == 0 {
+		interval = 10
+	}
+	
+	total := uint64(int64(receiver.timeoutDurationNS)/int64(interval)+1)
 	if total > math.MaxUint64 {
 		total = math.MaxUint64
 	}

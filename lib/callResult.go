@@ -14,7 +14,7 @@ const (
 )
 
 type CallResult struct {
-	ID uint64
+	ID int64
 	Req RawRequest
 	Resp RawResponse
 	Code RetCode
