@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"go.uber.org/zap"
-	"load-generator/helpers"
+	"load-generator/helper"
 	"load-generator/lib"
 	"math"
 	"sync/atomic"
@@ -45,34 +45,34 @@ type loadGenerator struct {
 }
 
 func (receiver *loadGenerator) init() error {
-	helpers.Logger.Info("Initializing loadGenerator...")
+	helper.Logger.Info("Initializing loadGenerator...")
 	interval := 1e9 / receiver.pps
 	if interval == 0 {
-		helpers.Logger.Info("Set interval to default value 10")
+		helper.Logger.Info("Set interval to default value 10")
 		interval = 10
 	}
 
 	total := uint64(int64(receiver.timeoutDurationNS)/int64(interval) + 1)
 	if total > math.MaxUint64 {
-		helpers.Logger.Info("Set concurrency to MaxUint64")
+		helper.Logger.Info("Set concurrency to MaxUint64")
 		total = math.MaxUint64
 	}
 
 	receiver.concurrency = total
 	tickets, err := lib.NewGoroutinePoolTickets(receiver.concurrency)
 	if err != nil {
-		helpers.Logger.Error("Create NewGoroutinePoolTickets", zap.String("err", err.Error()))
+		helper.Logger.Error("Create NewGoroutinePoolTickets", zap.String("err", err.Error()))
 		return err
 	}
 	receiver.ticketsImpl = tickets
-	helpers.Logger.Info("loadGenerator inited")
+	helper.Logger.Info("loadGenerator inited")
 	return nil
 }
 
 func (receiver *loadGenerator) callOne(rawReq *lib.RawRequest) *lib.RawResponse {
 	atomic.AddUint64(&receiver.callCount, 1)
 	if rawReq == nil {
-		helpers.Logger.Warn("rawReq is nil")
+		helper.Logger.Warn("rawReq is nil")
 		return &lib.RawResponse{ID: -1, Err: errors.New("Invalid raw request")}
 	}
 	var rawResp *lib.RawResponse
@@ -159,18 +159,18 @@ func (receiver *loadGenerator) sendResult(result *lib.CallResult) bool {
 }
 
 func (receiver *loadGenerator) printIgnoredResult(result *lib.CallResult, cause string) {
-	helpers.Logger.Info("Ignored result", zap.Int64("ID", result.ID), zap.Int("Code", int(result.Code)), zap.String("Msg", result.Msg), zap.Duration("Elapse", result.Elapse), zap.String("cause", cause))
+	helper.Logger.Info("Ignored result", zap.Int64("ID", result.ID), zap.Int("Code", int(result.Code)), zap.String("Msg", result.Msg), zap.Duration("Elapse", result.Elapse), zap.String("cause", cause))
 }
 
 func (receiver *loadGenerator) prepareToStop(err error) {
-	helpers.Logger.Info("loadGenerator prepareToStop")
+	helper.Logger.Info("loadGenerator prepareToStop")
 	atomic.CompareAndSwapUint32(&receiver.status, STATUS_STARTED, STATUS_STOPPING)
 	close(receiver.resultChan)
 	atomic.StoreUint32(&receiver.status, STATUS_STOPPED)
 }
 
 func (receiver *loadGenerator) genLoad(throttle <-chan time.Time) {
-	helpers.Logger.Info("loadGenerator generating payloads...")
+	helper.Logger.Info("loadGenerator generating payloads...")
 	for {
 		select {
 		case <-receiver.ctx.Done():
@@ -191,7 +191,7 @@ func (receiver *loadGenerator) genLoad(throttle <-chan time.Time) {
 }
 
 func (receiver *loadGenerator) Start() bool {
-	helpers.Logger.Info("loadGenerator Starting...")
+	helper.Logger.Info("loadGenerator Starting...")
 	if !atomic.CompareAndSwapUint32(&receiver.status, STATUS_INIT, STATUS_STARTING) {
 		if !atomic.CompareAndSwapUint32(&receiver.status, STATUS_STOPPED, STATUS_STARTING) {
 			return false
@@ -213,12 +213,12 @@ func (receiver *loadGenerator) Start() bool {
 		receiver.genLoad(throttle)
 	}()
 
-	helpers.Logger.Info("loadGenerator Started")
+	helper.Logger.Info("loadGenerator Started")
 	return true
 }
 
 func (receiver *loadGenerator) Stop() bool {
-	helpers.Logger.Info("loadGenerator Stopping...")
+	helper.Logger.Info("loadGenerator Stopping...")
 	if !atomic.CompareAndSwapUint32(&receiver.status, STATUS_STARTED, STATUS_STOPPING) {
 		return false
 	}
@@ -229,7 +229,7 @@ func (receiver *loadGenerator) Stop() bool {
 		}
 		time.Sleep(time.Microsecond)
 	}
-	helpers.Logger.Info("loadGenerator Stopped")
+	helper.Logger.Info("loadGenerator Stopped")
 	return true
 }
 
@@ -252,7 +252,7 @@ type Generator interface {
 func NewLoadGenerator(
 	params NewLoadGeneratorParams,
 ) (Generator, error) {
-	helpers.Logger.Info("Constructing NewLoadGenerator...")
+	helper.Logger.Info("Constructing NewLoadGenerator...")
 	if err := params.Check(); err != nil {
 		return nil, err
 	}
@@ -269,10 +269,6 @@ func NewLoadGenerator(
 	if err := gen.init(); err != nil {
 		return nil, err
 	}
-	helpers.Logger.Info("NewLoadGenerator constructed")
+	helper.Logger.Info("NewLoadGenerator constructed")
 	return gen, nil
-}
-
-func main() {
-	fmt.Println("Hello")
 }

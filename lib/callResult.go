@@ -21,3 +21,25 @@ type CallResult struct {
 	Msg    string
 	Elapse time.Duration
 }
+
+// GetRetCodePlain ...
+func GetRetCodePlain(code RetCode) string {
+	var codePlain string
+	switch code {
+	case RET_CODE_SUCCESS:
+		codePlain = "Success"
+	case RET_CODE_WARNING_TIMEOUT:
+		codePlain = "Call Timeout Warning"
+	case RET_CODE_ERR_CALL:
+		codePlain = "Call Error"
+	case RET_CODE_ERR_RESPONSE:
+		codePlain = "Response Error"
+	case RET_CODE_ERR_CALLEE:
+		codePlain = "Callee Error"
+	case RET_CODE_FATAL_CALL:
+		codePlain = "Call Fatal Error"
+	default:
+		codePlain = "Unknown result code"
+	}
+	return codePlain
+}
